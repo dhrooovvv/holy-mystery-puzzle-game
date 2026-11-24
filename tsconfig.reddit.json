@@ -1,0 +1,1 @@
+{"extends":"./tsconfig.json","compilerOptions":{"paths":{}},"include":["src/client","src/shared","src/server","vite.reddit.config.ts"],"exclude":["**/*.test.ts","src/client/platform-local.ts","src/server/local.ts"]}

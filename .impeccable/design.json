@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-24T00:00:00Z",
+  "title": "design system: last seen online",
+  "extensions": {
+    "colorMeta": {
+      "desktop-teal": {
+        "role": "primary",
+        "displayName": "desktop teal"
+      },
+      "active-navy": {
+        "role": "secondary",
+        "displayName": "active navy"
+      },
+      "window-silver": {
+        "role": "neutral",
+        "displayName": "window silver"
+      },
+      "evidence-paper": {
+        "role": "neutral",
+        "displayName": "evidence paper"
+      }
+    },
+    "shadows": [
+      {
+        "name": "raised-bevel",
+        "value": "inset 1px 1px white,inset -1px -1px #222,inset 2px 2px #dedede,inset -2px -2px #808080",
+        "purpose": "raised controls and window chrome."
+      },
+      {
+        "name": "desktop-window",
+        "value": "8px 12px 26px #0033334d",
+        "purpose": "ambient separation of the main window from the desktop."
+      }
+    ],
+    "motion": [
+      {
+        "name": "reveal",
+        "value": "250ms ease-out",
+        "purpose": "saved notification entrance, disabled with reduced motion."
+      },
+      {
+        "name": "switch",
+        "value": "150ms",
+        "purpose": "circuit switch position change, disabled with reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact-desktop",
+        "value": "1000px"
+      },
+      {
+        "name": "mobile-panel",
+        "value": "700px"
+      },
+      {
+        "name": "stacked-choices",
+        "value": "560px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "primary button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "main shell action with navy fill.",
+      "html": "<button class=\"ds-primary\">return to investigation</button>",
+      "css": ".ds-primary{font:13px Tahoma,Verdana,Arial,sans-serif;border:0;border-radius:0;box-shadow:inset 1px 1px white,inset -1px -1px #222,inset 2px 2px #dedede,inset -2px -2px #808080;cursor:pointer;background:#000080;color:#fff;padding:12px 22px;font-weight:bold}.ds-primary:hover{background:#15159b}.ds-primary:focus-visible{outline:2px dotted #fff;outline-offset:-5px}.ds-primary:active{box-shadow:inset 1px 1px #222,inset -1px -1px #fff}"
+    },
+    {
+      "name": "secondary button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "raised silver control.",
+      "html": "<button class=\"ds-secondary\">view evidence</button>",
+      "css": ".ds-secondary{font:13px Tahoma,Verdana,Arial,sans-serif;border:0;border-radius:0;box-shadow:inset 1px 1px white,inset -1px -1px #222,inset 2px 2px #dedede,inset -2px -2px #808080;cursor:pointer;background:#c0c0c0;color:#202323;padding:9px 14px;min-height:36px}.ds-secondary:hover{background:#d0d0d0}.ds-secondary:focus-visible{outline:2px dotted #000080;outline-offset:-5px}.ds-secondary:active{box-shadow:inset 1px 1px #222,inset -1px -1px #fff,inset 2px 2px #808080}"
+    },
+    {
+      "name": "record field",
+      "kind": "input",
+      "description": "sunken field for selecting a timestamp correction.",
+      "html": "<label class=\"ds-field\">camera correction <select><option>+0 minutes</option><option>+19 minutes</option></select></label>",
+      "css": ".ds-field{font:12px Tahoma,Verdana,Arial,sans-serif;color:#24351e;display:flex;gap:12px;align-items:center}.ds-field select{min-height:36px;background:#f7f8ed;border-radius:0;border:2px solid;border-color:#737e66 #fff #fff #737e66;padding:5px;color:#24351e}.ds-field select:focus-visible{outline:2px dashed #000080;outline-offset:3px}"
+    },
+    {
+      "name": "chapter navigation",
+      "kind": "nav",
+      "description": "ordered tabs for the three released chapters.",
+      "html": "<nav class=\"ds-tabs\"><button aria-current=\"step\">01 the message</button><button>02 the reflection</button><button>03 the camera</button></nav>",
+      "css": ".ds-tabs{display:flex;gap:5px;padding:10px 12px 0;background:#c6c6be;border-bottom:1px solid #818179}.ds-tabs button{font:11px Tahoma,Verdana,Arial,sans-serif;background:#c6c6be;border:0;padding:8px 14px;min-height:42px;box-shadow:inset 1px 1px #f8f8ed,inset -1px 0 #7d7d72;cursor:pointer}.ds-tabs button[aria-current]{background:#eeeee6}.ds-tabs button:hover{background:#deded3}.ds-tabs button:focus-visible{outline:2px dotted #000080;outline-offset:-5px}"
+    },
+    {
+      "name": "classic window",
+      "kind": "custom",
+      "refersTo": "titlebar",
+      "description": "one focused application with bevelled outer chrome.",
+      "html": "<section class=\"ds-window\"><header class=\"ds-title\">messenger.exe</header><div class=\"ds-content\">her computer shut down at 2:02 am.</div></section>",
+      "css": ".ds-window{padding:3px;background:#c0c0c0;box-shadow:inset 1px 1px white,inset -1px -1px #222,inset 2px 2px #dedede,inset -2px -2px #808080;font:13px Tahoma,Verdana,Arial,sans-serif;color:#202323}.ds-title{height:29px;display:flex;align-items:center;padding:0 6px;background:#000080;color:#fff;font-size:12px;font-weight:bold}.ds-content{background:#f5f3e9;padding:25px 28px;line-height:1.65}"
+    },
+    {
+      "name": "recovered records",
+      "kind": "custom",
+      "description": "expandable artifact facts, accessible through native disclosure.",
+      "html": "<details class=\"ds-records\"><summary>recovered records</summary><p>session r17: reception \u00b7 active 01:48\u201302:21</p></details>",
+      "css": ".ds-records{padding:9px 10px;background:#e5e7d8;border:1px solid #a0a58f;font:11px/1.5 Tahoma,Verdana,Arial,sans-serif;color:#21251f}.ds-records summary{cursor:pointer;color:#405438;min-height:24px}.ds-records summary:focus-visible{outline:2px dashed #000080;outline-offset:3px}.ds-records p{margin:8px 0 0}"
+    }
+  ],
+  "narrative": {
+    "northStar": "a secret inside an old computer",
+    "overview": "the supplied windows-classic direction governs the interface: teal desktop, silver bevels, navy active title bars, original pixel icons, and compact applications. evidence is shown in the application that reveals it. the desktop is usable scenery, while the active puzzle receives the strongest hierarchy.",
+    "keyCharacteristics": [
+      "square windows and tactile raised or sunken controls.",
+      "short lowercase copy with legible evidence and timestamps.",
+      "an immediate mystery, with no boot sequence.",
+      "responsive application panels and optional audio."
+    ],
+    "rules": [],
+    "dos": [
+      "do preserve the pinned classic desktop palette and square bevel language.",
+      "do make the puzzle artifact larger and clearer than its controls.",
+      "do pair every diagram state with a text label and provide keyboard controls.",
+      "do keep every visible control functional."
+    ],
+    "donts": [
+      "don't introduce glass, rounded dashboard cards, or decorative hacker terminals.",
+      "don't require precision dragging, audio, or external research to solve a chapter.",
+      "don't claim the two-to-four-minute target is measured without human playtesting."
+    ]
+  }
+}
