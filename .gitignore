@@ -6,3 +6,8 @@ dist/
 .env
 .env.*
 !.env.example
+
+src/client/public/source.zip
+src/client/public/license.txt
+
+generated_images/

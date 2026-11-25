@@ -1,0 +1,266 @@
+/* Extracted from ryOS src/utils/desktopContentBounds.ts, commit e4fb9d720fd665f61ec70a72ab6260eb8e3dbb35.
+ * Copyright (C) 2025 Ryo Lu. AGPL-3.0-only.
+ * Modified 2026-11-24: pure geometry only; runtime platform/service probes removed.
+ * Game passes the usable workspace as bounds. See THIRD_PARTY_NOTICES.md. */
+/**
+ * Usable desktop rectangle.
+ *
+ * Apple documents no API for detecting iPhone Duo — it reports as an iPhone,
+ * and `userInterfaceIdiom` / device model / user agent are the wrong signal.
+ * The vertical status bar is whichever safe-area inset is non-zero (84pt on
+ * the trailing edge of the closed outer display in the iOS 27.1 simulator).
+ * On that folded display the shell CSS floors the right inset at 84px when
+ * env() is 0, and phone-width windows then use that content width instead
+ * of 100%.
+ * Left and right are independent; do not mirror one side onto the other.
+ *
+ * `--desktop-content-left/right` are 0px in a regular browser. Inside the iOS
+ * shell they are those insets, plus a 12px left floor on wide coarse-touch
+ * viewports when the left inset is 0. Wallpaper ignores them and paints the
+ * full viewport. Zero insets reproduce today's viewport math exactly.
+ */
+
+
+
+export type DesktopContentInsets = {
+  left: number;
+  right: number;
+  top?: number;
+  bottom?: number;
+};
+
+export type DesktopContentBounds = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  right: number;
+  bottom: number;
+};
+
+const SERVER_BOUNDS: DesktopContentBounds = {
+  x: 0,
+  y: 0,
+  width: 0,
+  height: 0,
+  right: 0,
+  bottom: 0,
+};
+
+export function desktopContentBounds(input: {
+  viewportWidth: number;
+  viewportHeight: number;
+  insets: DesktopContentInsets;
+}): DesktopContentBounds {
+  const left = Math.max(0, input.insets.left);
+  const rightInset = Math.max(0, input.insets.right);
+  const top = Math.max(0, input.insets.top ?? 0);
+  const bottomInset = Math.max(0, input.insets.bottom ?? 0);
+  const width = Math.max(0, input.viewportWidth - left - rightInset);
+  const height = Math.max(0, input.viewportHeight - top - bottomInset);
+  return {
+    x: left,
+    y: top,
+    width,
+    height,
+    right: left + width,
+    bottom: top + height,
+  };
+}
+
+/** True when chrome must leave the viewport edge. False on desktop (insets 0). */
+export function hasHorizontalContentInset(
+  bounds: DesktopContentBounds,
+  viewportWidth: number,
+): boolean {
+  return bounds.x > 0 || bounds.right < viewportWidth;
+}
+
+/**
+ * Phone-width frames stay `"100%"` until a horizontal inset exists.
+ * At that point the frame uses a pixel width so `min-width: 100%` cannot
+ * pull it back under the status bar.
+ */
+export function windowUsesExplicitWidth(
+  viewportWidth: number,
+  bounds: DesktopContentBounds,
+): boolean {
+  return (
+    viewportWidth >= 768 || hasHorizontalContentInset(bounds, viewportWidth)
+  );
+}
+
+/**
+ * Frame `min-width`. Phone-width frames always span the content rect, so an
+ * app's desktop minimum must not widen one past it into a status-bar strip.
+ */
+export function windowFrameMinWidth(input: {
+  viewportWidth: number;
+  bounds: DesktopContentBounds;
+  appMinWidth: number | undefined;
+}): number | "100%" | undefined {
+  if (!windowUsesExplicitWidth(input.viewportWidth, input.bounds)) return "100%";
+  return input.viewportWidth >= 768 ? input.appMinWidth : undefined;
+}
+
+/**
+ * Initial / resize fit. With no horizontal inset this matches the previous
+ * overflow clamp (`x = max(0, innerWidth - width)` only when the window
+ * extends past the viewport) and leaves a negative `x` alone.
+ */
+export function clampWindowToContentBounds(input: {
+  x: number;
+  width: number;
+  viewportWidth: number;
+  bounds: DesktopContentBounds;
+  mobile: boolean;
+}): { x: number; width: number } {
+  const { bounds, viewportWidth } = input;
+  if (!hasHorizontalContentInset(bounds, viewportWidth)) {
+    if (input.x + input.width > viewportWidth) {
+      return { x: Math.max(0, viewportWidth - input.width), width: input.width };
+    }
+    return { x: input.x, width: input.width };
+  }
+  if (input.mobile) {
+    return { x: bounds.x, width: bounds.width };
+  }
+  let x = input.x;
+  let width = input.width;
+  if (bounds.x > 0 && x < bounds.x) x = bounds.x;
+  if (x + width > bounds.right) {
+    const room = bounds.right - x;
+    if (room < width) width = Math.max(0, room);
+  }
+  return { x, width };
+}
+
+export function windowDragLimits(input: {
+  windowWidth: number;
+  viewportWidth: number;
+  bounds: DesktopContentBounds;
+}): { minX: number; maxX: number } {
+  const right = hasHorizontalContentInset(input.bounds, input.viewportWidth)
+    ? input.bounds.right
+    : input.viewportWidth;
+  return {
+    minX: input.bounds.x > 0 ? input.bounds.x : -(input.windowWidth - 80),
+    maxX: right - 80,
+  };
+}
+
+export function windowSnapEdges(
+  viewportWidth: number,
+  bounds: DesktopContentBounds,
+): { left: number; right: number } {
+  if (!hasHorizontalContentInset(bounds, viewportWidth)) {
+    return { left: 0, right: viewportWidth };
+  }
+  return { left: bounds.x, right: bounds.right };
+}
+
+export function windowSnapGeometry(input: {
+  viewportWidth: number;
+  bounds: DesktopContentBounds;
+  zone: "left" | "right";
+}): { x: number; width: number } {
+  const inset = hasHorizontalContentInset(input.bounds, input.viewportWidth);
+  const span = inset ? input.bounds.width : input.viewportWidth;
+  const origin = inset ? input.bounds.x : 0;
+  const width = Math.floor(span / 2);
+  return {
+    width,
+    x: input.zone === "left" ? origin : origin + width,
+  };
+}
+
+export function windowResizeMaxWidth(
+  viewportWidth: number,
+  bounds: DesktopContentBounds,
+): number {
+  return hasHorizontalContentInset(bounds, viewportWidth)
+    ? bounds.right
+    : viewportWidth;
+}
+
+export function windowResizeMinLeft(bounds: DesktopContentBounds): number {
+  return bounds.x > 0 ? bounds.x : 0;
+}
+
+export function mobileFullWidthFrame(
+  viewportWidth: number,
+  bounds: DesktopContentBounds,
+): { x: number; width: number } {
+  if (!hasHorizontalContentInset(bounds, viewportWidth)) {
+    return { x: 0, width: viewportWidth };
+  }
+  return { x: bounds.x, width: bounds.width };
+}
+
+/**
+ * Mobile size used when a window is first opened. `mobileDefaultSize` keeps
+ * its height and a clamped width; `mobileSquare` uses the content width for
+ * both axes; otherwise the frame is full width and the app's default height.
+ */
+export function resolveMobileWindowFrame(input: {
+  viewportWidth: number;
+  bounds: DesktopContentBounds;
+  defaultSize: { width: number; height: number };
+  mobileDefaultSize?: { width: number; height: number };
+  mobileSquare?: boolean;
+  /** Height to keep when the app has no mobile-specific size. */
+  persistedHeight?: number;
+}): { x: number; width: number; height: number } {
+  const frame = mobileFullWidthFrame(input.viewportWidth, input.bounds);
+  if (input.mobileDefaultSize) {
+    const fitted = clampWindowToContentBounds({
+      x: 0,
+      width: input.mobileDefaultSize.width,
+      viewportWidth: input.viewportWidth,
+      bounds: input.bounds,
+      mobile: true,
+    });
+    return {
+      x: fitted.x,
+      width: fitted.width,
+      height: input.mobileDefaultSize.height,
+    };
+  }
+  if (input.mobileSquare) {
+    return { x: frame.x, width: frame.width, height: frame.width };
+  }
+  return {
+    x: frame.x,
+    width: frame.width,
+    height: input.persistedHeight ?? input.defaultSize.height,
+  };
+}
+
+export function maximizedWindowFrame(input: {
+  viewportWidth: number;
+  bounds: DesktopContentBounds;
+  maxWidthConstraint: number | null;
+  defaultWidth: number;
+  restoring: boolean;
+}): { x: number; width: number } {
+  const wide = input.viewportWidth >= 768;
+  const inset = hasHorizontalContentInset(input.bounds, input.viewportWidth);
+  const available = inset ? input.bounds.width : input.viewportWidth;
+  const origin = inset ? input.bounds.x : 0;
+  if (input.restoring) {
+    return {
+      x: Math.max(origin, origin + (available - input.defaultWidth) / 2),
+      width: input.defaultWidth,
+    };
+  }
+  let width = available;
+  if (wide) {
+    const cap = input.maxWidthConstraint ?? available;
+    width = Math.min(available, cap);
+  }
+  return {
+    x: wide ? origin + (available - width) / 2 : origin,
+    width,
+  };
+}
+

@@ -1,64 +1,314 @@
 import { useEffect, useRef, useState } from 'react';
+import { Finder } from './Finder';
+import { RyosMenuBar, type GameMenu } from './RyosMenuBar';
+import { RyosDock } from './ryos/RyosDock';
 import { Puzzle } from './Puzzles';
+import { PixelIcon } from './PixelIcon';
+import { DesktopWindow } from './DesktopWindow';
+import { desktopCommand } from './desktopShortcuts';
+import type { AttemptResult, ChapterData, GameState, Mode, VoteResult } from '../shared/types';
 
-type AppId = 'puzzle'|'casebook'|'help'|'clock';
-type Evidence = {day:number;title:string;detail:string};
-type State = {mode:string;unlockedDay:number;completed:number[];hints:Record<string,number>;streak:number;serverTime:string;nextUnlockAt?:string;evidence:Evidence[];chapters:{day:number;title:string;hook:string;objective:string}[]};
-const names = ['the impossible message','the missing reflection','the dead camera'];
-const apps = ['messenger.exe','photolab.exe','security.exe'];
-const descriptions = ['trace the message back to its real sender.','bring a deleted moment back into the light.','restore the recording. put the night back in order.'];
-
-export function PixelIcon({kind='computer',size=36}:{kind?:string;size?:number}) {
- const colors = kind==='book'?['#ffd767','#a56623']:kind==='photo'?['#85d1d3','#14747b']:kind==='disk'?['#ddd','#777']:['#74b6ff','#173999'];
- return <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" style={{imageRendering:'pixelated'}} shapeRendering="crispEdges">
- {kind==='book'?<><path d="M5 3h21v25H5z" fill="#222"/><path d="M7 4h17v22H7z" fill={colors[0]}/><path d="M7 4h4v22H7z" fill={colors[1]}/><path d="M14 9h8v2h-8zm0 5h8v2h-8zm0 5h6v2h-6z" fill="#65401b"/><path d="M7 27h17v2H7z" fill="#fff8dc"/></>:kind==='photo'?<><path d="M3 5h26v22H3z" fill="#222"/><path d="M4 6h24v20H4z" fill="#eee"/><path d="M6 8h20v14H6z" fill="#a2d5ec"/><path d="M6 22v-5l6-6 6 7 4-4 4 5v3z" fill="#208778"/><path d="M21 9h3v3h-3z" fill="#fff38b"/></>:kind==='disk'?<><path d="M5 2h21l2 3v25H4V2z" fill="#222"/><path d="M6 3h19l2 3v22H6z" fill="#7991ba"/><path d="M10 3h12v10H10z" fill="#ccc"/><path d="M18 4h3v7h-3z" fill="#333"/><path d="M9 18h15v10H9z" fill="#eee"/><path d="M12 20h10v2H12zm0 4h8v1h-8z" fill="#777"/></>:<><path d="M3 3h25v19H3z" fill="#222"/><path d="M4 4h23v17H4z" fill="#dedede"/><path d="M6 6h19v12H6z" fill={colors[1]}/><path d="M8 8h15v8H8z" fill={colors[0]}/><path d="M12 22h7v4h5v3H7v-3h5z" fill="#222"/><path d="M12 23h7v4h4v1H8v-1h4z" fill="#ccc"/>{kind==='mail'&&<><path d="M15 14h16v13H15z" fill="#222"/><path d="M16 15h14v11H16z" fill="#fff5bf"/><path d="m16 15 7 6 7-6" fill="none" stroke="#96723a"/></>}</>}
- </svg>;
+type AppId = 'messenger' | 'photos' | 'security' | 'documents' | 'notes' | 'casebook' | 'clock' | 'help' | 'testing';
+const puzzleApps: AppId[] = ['messenger', 'photos', 'security'];
+const applications: Record<AppId, { title: string; kind: string; x: number; y: number; width: number; height: number }> = {
+  messenger: { title: 'leah_v — messenger', kind: 'mail', x: 170, y: 72, width: 510, height: 545 },
+  photos: { title: 'corridor_0209.bmp — photo lab', kind: 'photo', x: 260, y: 58, width: 650, height: 650 },
+  security: { title: 'cam 02 — archive connection', kind: 'computer', x: 200, y: 38, width: 650, height: 680 },
+  documents: { title: 'documents — finder', kind: 'disk', x: 130, y: 95, width: 670, height: 450 },
+  notes: { title: 'before i forget.txt — notepad', kind: 'book', x: 430, y: 120, width: 360, height: 285 },
+  casebook: { title: 'my notebook', kind: 'book', x: 390, y: 90, width: 490, height: 450 },
+  clock: { title: 'date & time', kind: 'computer', x: 480, y: 180, width: 310, height: 235 },
+  help: { title: 'help topics', kind: 'disk', x: 330, y: 155, width: 360, height: 330 },
+  testing: { title: 'testing — judge access', kind: 'computer', x: 760, y: 60, width: 300, height: 340 },
+};
+const artifactNames = ['session_report.txt', 'unsent_note.txt', 'witness_statement.txt'];
+const fileNames = ['message_0217.dat', 'corridor_0209.bmp', 'cam02.rec'];
+const testingEnabled = new URLSearchParams(location.search).get('testing') === '1' || new URLSearchParams(location.search).get('mode') === 'demo';
+async function api<T>(path: string, body?: unknown): Promise<T> {
+  const response = await fetch(path, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : undefined);
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error?.message || 'connection interrupted. try again.');
+  return data as T;
 }
-async function api(path:string,body?:unknown) {const r=await fetch(path,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:undefined);const json=await r.json();if(!r.ok)throw new Error(json.error?.message||json.error||'connection interrupted. please try again.');return json;}
+export default function App() {
+  const [mode, setMode] = useState<Mode>(new URLSearchParams(location.search).get('mode') === 'demo' ? 'demo' : 'daily');
+  const [state, setState] = useState<GameState | null>(null);
+  const [loadedMode, setLoadedMode] = useState<Mode | null>(null);
+  const requestGeneration = useRef(0);
+  const [connectionError, setConnectionError] = useState('');
+  const [connectionAttempt, setConnectionAttempt] = useState(0);
+  const [chapters, setChapters] = useState<Record<number, ChapterData>>({});
+  const [results, setResults] = useState<Record<number, AttemptResult>>({});
+  const [hints, setHints] = useState<Record<number, string>>({});
+  const [errors, setErrors] = useState<Record<number, string>>({});
+  const [votes, setVotes] = useState<Record<number, VoteResult>>({});
+  const [busy, setBusy] = useState(false);
+  const [opened, setOpened] = useState<AppId[]>(['messenger']);
+  const [minimized, setMinimized] = useState<AppId[]>([]);
+  const [closed, setClosed] = useState<AppId[]>([]);
+  const [active, setActive] = useState<AppId>('messenger');
+  const [order, setOrder] = useState<AppId[]>(['messenger']);
+  const [toast, setToast] = useState('');
+  const [sound, setSound] = useState(false);
+  const [bookTab, setBookTab] = useState('files');
+  const modeRef = useRef(mode);
+  const audioRef = useRef<AudioContext | null>(null);
+  const inFlight = useRef(new Set<string>());
+  const pendingDrafts = useRef<Record<number,{mode:Mode;draft:Record<string,unknown>}>>({});
+  const draftTimers = useRef<Record<number,ReturnType<typeof setTimeout>>>({});
+  const draftWrites = useRef<Record<number,Promise<void>>>({});
+  const draftCallbacks = useRef<Record<number,(draft:Record<string,unknown>)=>void>>({});
+  modeRef.current = mode;
+  useEffect(()=>{
+    const url=new URL(location.href);
+    url.searchParams.set('mode',mode);
+    if(testingEnabled)url.searchParams.set('testing','1');
+    history.replaceState(null,'',url);
+  },[mode]);
 
-export default function App(){
- const [mode,setMode]=useState<'daily'|'demo'>(new URLSearchParams(location.search).get('mode')==='daily'?'daily':new URLSearchParams(location.search).get('mode')==='demo'||['localhost','127.0.0.1'].includes(location.hostname)?'demo':'daily');
- const [state,setState]=useState<State|null>(null),[day,setDay]=useState(1),[active,setActive]=useState<AppId>('puzzle'),[minimized,setMinimized]=useState(false),[start,setStart]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[hint,setHint]=useState(''),[result,setResult]=useState<any>(null),[chapter,setChapter]=useState<any>(null),[vote,setVote]=useState<any>(null),[sound,setSound]=useState(false),[tab,setTab]=useState('evidence'),[toast,setToast]=useState(''),[offset,setOffset]=useState({x:0,y:0});
- const modeRef=useRef(mode);modeRef.current=mode;
- const drag=useRef<{x:number;y:number;ox:number;oy:number}|null>(null);const audioRef=useRef<AudioContext|null>(null);
- async function load(newMode=mode){try{const s=await api(`/api/state?mode=${newMode}`);if(modeRef.current===newMode)setState(s);return s as State;}catch(e){setError((e as Error).message);return null;}}
- useEffect(()=>{let cancelled=false;setResult(null);setHint('');setState(null);load(mode).then(s=>{if(!cancelled&&s)setDay(Math.min(3,Math.min((s.completed.length||0)+1,s.unlockedDay||1)));});return()=>{cancelled=true;};},[mode]);
- useEffect(()=>{let cancelled=false;setChapter(null);setHint('');setError('');setResult(null);setVote(null);api(`/api/chapters/${day}?mode=${mode}`).then(c=>{if(!cancelled)setChapter(c);}).catch(e=>{if(!cancelled)setError(e.message);});return()=>{cancelled=true;};},[day,mode]);
- useEffect(()=>{if(!toast)return;const t=setTimeout(()=>setToast(''),4000);return()=>clearTimeout(t);},[toast]);
- function ping(){if(!sound)return;try{const ctx=audioRef.current??new AudioContext();audioRef.current=ctx;void ctx.resume();const o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.setValueAtTime(660,ctx.currentTime);o.frequency.setValueAtTime(880,ctx.currentTime+.13);g.gain.setValueAtTime(.06,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.35);o.connect(g).connect(ctx.destination);o.start();o.stop(ctx.currentTime+.36);}catch{/* audio remains optional */}}
- async function solve(answer:unknown){setBusy(true);setError('');try{const r=await api(`/api/chapters/${day}/attempt`,{mode,answer});if(r.correct===false||r.solved===false){setError(r.feedback||r.message||'that does not fit all the evidence. take another look.');return;}ping();setResult(r);await load();setToast('new evidence saved to casebook.exe');}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
- async function getHint(){setBusy(true);try{const r=await api(`/api/chapters/${day}/hints`,{mode});setHint(r.hint||r.message);await load();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
- function open(app:AppId){setActive(app);setMinimized(false);setStart(false);}
- function go(n:number){if(!state)return;if(n>state.unlockedDay){setToast('this chapter opens tomorrow. use judge demo to play all three now.');return;}if(n>completed.length+1){setToast('finish the previous chapter to follow the evidence in order.');return;}setDay(n);setResult(null);setHint('');setError('');open('puzzle');}
- async function cast(choice:string){try{setVote(await api(`/api/chapters/${day}/votes`,{mode,choice}));}catch(e){setError((e as Error).message);}}
- async function share(){const text=`last seen online · case 001\nday ${day}/3 · evidence recovered\n${state?.hints?.[day]||0} hints · no spoilers\ncan you find what they erased?`;try{await navigator.clipboard.writeText(text);setToast('spoiler-free result copied.');}catch{setToast(text);}}
- const info=state?.chapters?.find(x=>x.day===day);const completed=state?.completed||[];
- const title=active==='puzzle'?apps[day-1]:active==='casebook'?'casebook.exe':active==='clock'?'date & time':'readme.txt — notepad';
- return <main className="desktop" onPointerUp={()=>{drag.current=null;}} onPointerMove={e=>{if(drag.current)setOffset({x:Math.max(-180,Math.min(180,drag.current.ox+e.clientX-drag.current.x)),y:Math.max(-35,Math.min(100,drag.current.oy+e.clientY-drag.current.y))});}}>
- <div className="desktop-top"><span className="connection"><i/> recovered connection · october 2004</span><div className="mode-switch" aria-label="play mode"><button className={mode==='daily'?'selected':''} disabled={busy} onClick={()=>setMode('daily')}>daily case</button><button className={mode==='demo'?'selected':''} disabled={busy} onClick={()=>setMode('demo')}>judge demo</button></div></div>
- <nav className="desktop-icons" aria-label="desktop applications">{[{label:'messenger',kind:'mail',fn:()=>go(1)},{label:'photo lab',kind:'photo',fn:()=>go(2)},{label:'security',kind:'computer',fn:()=>go(3)},{label:'casebook',kind:'book',fn:()=>open('casebook')},{label:'read me',kind:'disk',fn:()=>open('help')}].map((a,i)=><button key={a.label} onClick={a.fn} className="desktop-icon"><PixelIcon kind={a.kind} size={40}/><span>{a.label}{i<3&&i+1>(state?.unlockedDay||1)&&<small>locked</small>}</span></button>)}</nav>
- <div className="wallpaper" aria-hidden="true"><div>last seen<br/><span>online.</span></div><p>some things don’t stay deleted.</p></div>
- <div className="desktop-case-label"><span>case 001 / last seen</span><span>{mode==='demo'?'all three chapters unlocked':'one day. one unsettling discovery.'}</span></div>
- {!minimized&&<section className={`window main-window ${active==='puzzle'?'':'utility-window'}`} style={{transform:`translate(${offset.x}px, ${offset.y}px)`}} aria-label={title}>
- <header className="titlebar" onPointerDown={e=>{if((e.target as HTMLElement).closest('button')||window.innerWidth<700)return;drag.current={x:e.clientX,y:e.clientY,ox:offset.x,oy:offset.y};e.currentTarget.setPointerCapture(e.pointerId);}}><span><PixelIcon kind={active==='casebook'?'book':day===2?'photo':'mail'} size={18}/>{title}</span><div className="window-controls"><button aria-label="minimize window" onClick={()=>setMinimized(true)}>_</button><button aria-label="center window" onClick={()=>setOffset({x:0,y:0})}>□</button><button aria-label="close window" onClick={()=>setMinimized(true)}>×</button></div></header>
- <div className="menubar"><button onClick={()=>open('puzzle')}>investigation</button><button onClick={()=>open('casebook')}>casebook</button><button onClick={()=>open('help')}>help</button><button className="sound-button" onClick={()=>setSound(x=>!x)}>sound: {sound?'on':'off'}</button></div>
- {active==='puzzle'?<>
- <div className="case-header"><div><span className="tiny-label">case 001: last seen</span><h1>{names[day-1]}</h1><p>{info?.hook||['her computer shut down at 2:02 am. at 2:17, it sent one final message. somebody is lying.','the last security photograph is almost black. someone wanted it that way.','the camera was officially dead. something kept it recording.'][day-1]}</p></div><div className="day-stamp">day <b>0{day}</b><span>of 03</span></div></div>
- <nav className="chapter-tabs" aria-label="chapters">{names.map((n,i)=><button key={n} className={day===i+1?'active':''} onClick={()=>go(i+1)} aria-current={day===i+1?'step':undefined}><span className="chapter-num">{completed.includes(i+1)?'✓':`0${i+1}`}</span><span>{['the message','the reflection','the camera'][i]}</span>{i+1>(state?.unlockedDay||1)&&<small>tomorrow</small>}</button>)}</nav>
- <div className="game-content">
- {result?<div className="result-panel"><div className="evidence-seal"><PixelIcon kind="book" size={52}/><span>evidence recovered</span></div><h2>{result.evidence?.title||state?.evidence?.find(e=>e.day===day)?.title||'another piece of the night.'}</h2><p>{result.reveal||result.evidence?.detail||result.message||state?.evidence?.find(e=>e.day===day)?.detail}</p><div className="result-stats"><span><b>{state?.hints?.[day]||0}</b> hints used</span><span><b>{state?.streak||1}</b> day streak</span><span><b>{completed.length}/3</b> case progress</span></div>{day===3&&<div className="final-timeline"><h3>the night, reconstructed</h3>{state?.evidence?.map(e=><p key={e.day}><b>0{e.day} · {e.title}</b><br/>{e.detail}</p>)}</div>}
- <div className="result-actions"><button onClick={()=>open('casebook')}>view evidence</button><button onClick={share}>copy spoiler-free result</button>{day<3&&state&&state.unlockedDay>day?<button className="primary" onClick={()=>go(day+1)}>continue to day {day+1} →</button>:day<3?<span className="tomorrow-note">next chapter opens tomorrow.</span>:<span className="case-closed">case closed.</span>}</div>
- <section className="theory-vote"><h3>your theory?</h3><p>{day===1?'why forge her final message?':day===2?'why did the guard go with leah?':'what broke the false timeline?'}</p>{vote?<p role="status">vote recorded. {vote.total?`${vote.total} investigators have voted.`:'thanks for adding your theory.'}{vote.counts&&Object.entries(vote.counts).map(([key,value])=><span className="vote-count" key={key}>{key}: {String(value)}</span>)}</p>:<div>{(result.voteOptions||result.theoryOptions||chapter?.choices||[]).map((v:any)=><button key={typeof v==='string'?v:v.id} onClick={()=>cast(typeof v==='string'?v:v.id)}>{typeof v==='string'?v:v.label}</button>)}</div>}</section></div>:<>
- <div className="objective"><span className="objective-icon">?</span><div><strong>your objective</strong><p>{info?.objective||descriptions[day-1]}</p></div><button onClick={getHint} disabled={busy||!chapter}>need a hint?</button></div>
- {state&&chapter?<Puzzle mode={mode} key={`${mode}-${day}-${completed.includes(day)}`} day={day} chapterData={chapter} onSolve={solve} onHint={getHint} hint={hint} busy={busy}/>:!error&&<div className="loading" role="status">reading recovered disk…</div>}
- 
- </>}
- {error&&<div className="error-box" role="alert">{error}<button onClick={()=>{void load();void api(`/api/chapters/${day}?mode=${mode}`).then(setChapter).catch(e=>setError(e.message));}}>retry connection</button></div>}
- </div><footer className="window-status"><span><i className="status-light"/> {result?'saved to casebook':completed.includes(day)?'evidence already recovered · replay':'investigation in progress'}</span><span>{mode==='demo'?'judge demo · separate save':'auto-save enabled'}</span></footer></>:active==='casebook'?<div className="casebook"><div className="casebook-heading"><PixelIcon kind="book" size={44}/><div><h1>the things they left behind.</h1><p>case 001 / last seen · {completed.length} of 3 artifacts</p></div></div><nav className="book-tabs">{['evidence','timeline','people','cases'].map(t=><button className={tab===t?'active':''} key={t} onClick={()=>setTab(t)}>{t}</button>)}</nav>
- {tab==='evidence'?<div className="evidence-list">{state?.evidence?.length?state.evidence.map(e=><article key={e.day}><PixelIcon kind={e.day===2?'photo':e.day===3?'disk':'mail'}/><div><small>verified · day 0{e.day}</small><h2>{e.title}</h2><p>{e.detail}</p><button onClick={()=>go(e.day)}>reopen artifact</button></div></article>):<div className="empty-book"><PixelIcon kind="book" size={56}/><h2>every secret leaves a trace.</h2><p>solve the first puzzle to recover your first piece of evidence.</p><button onClick={()=>go(1)}>open messenger.exe</button></div>}</div>:tab==='timeline'?<div className="book-text"><h2>verified timeline</h2><p><b>02:02 am</b> · leah’s workstation shuts down.</p><p><b>02:17 am</b> · a message appears from her account. sender unverified.</p>{state?.evidence?.map(e=><p key={e.day}><b>discovery {e.day}</b> · {e.detail}</p>)}<small>only recovered evidence is treated as fact.</small></div>:tab==='people'?<div className="book-text"><h2>people at the café</h2><p><b>leah vale</b> · night-shift employee. reported missing.</p><p><b>noah reed</b> · receptionist. filed the missing-person report.</p><p><b>eli moss</b> · security guard. said he left before shutdown.</p><p><b>the third person</b> · identity unverified until the recording is recovered.</p><hr/><small>statements are theories until supported by evidence.</small></div>:<div className="book-text"><h2>case 001: last seen</h2><p>{completed.length===3?'complete · all three artifacts recovered.':'open · a final message that should not exist.'}</p><p>{completed.length}/3 chapters complete</p><button onClick={()=>go(Math.min(3,state?.unlockedDay||1))}>return to investigation</button></div>}</div>:active==='clock'?<div className="book-text"><h1>date & time</h1><div className="clock-face">02:17 <small>am</small></div><p>october 14, 2004 · recovered system time</p><p>the desktop clock is a historical artifact. daily releases use the server’s current date.</p><button onClick={()=>open('puzzle')}>return to evidence</button></div>:<div className="book-text readme"><h1>you’re looking at her last computer.</h1><p>leah vale disappeared from the night shift. her account kept talking.</p><p>one day. one puzzle. one piece of the truth. every three days, a complete case.</p><h2>getting around</h2><p>click a desktop application to open it. use the taskbar to restore a window. on a computer, drag its blue title bar to move it.</p><p>all puzzles work with a keyboard. look for visible clues, then submit your discovery. a wrong answer won’t erase anything.</p><p>need a nudge? ask for a hint. everything you recover is saved in casebook.exe.</p><h2>daily or demo?</h2><p>daily chapters unlock according to the server. catch up on any released day. judge demo unlocks all three immediately and has a separate save.</p><p className="fiction-note">all people, computers, records, and events in this game are fictional.</p><button className="primary" onClick={()=>open('puzzle')}>back to the mystery →</button></div>}
- </section>}
- {toast&&<div className="toast window" role="status"><PixelIcon kind="disk" size={28}/><span>{toast}</span><button aria-label="dismiss notification" onClick={()=>setToast('')}>×</button></div>}
- {start&&<nav className="start-menu window" aria-label="start menu"><div className="start-brand">last seen online</div><div><button onClick={()=>open('puzzle')}><PixelIcon kind="mail"/> current investigation</button><button onClick={()=>open('casebook')}><PixelIcon kind="book"/> casebook.exe</button><button onClick={()=>open('help')}><PixelIcon kind="disk"/> read me</button><hr/><button onClick={()=>{setMode(mode==='demo'?'daily':'demo');setStart(false);}}>switch to {mode==='demo'?'daily case':'judge demo'}</button></div></nav>}
- <footer className="taskbar"><button className={`start-button ${start?'pressed':''}`} onClick={()=>setStart(x=>!x)}><PixelIcon size={22}/> <b>start</b></button><span className="task-separator"/><button className={`task-app ${active==='puzzle'&&!minimized?'pressed':''}`} onClick={()=>open('puzzle')}><PixelIcon kind="mail" size={19}/><span>{apps[day-1]}</span></button><button className={`task-app ${active==='casebook'&&!minimized?'pressed':''}`} onClick={()=>open('casebook')}><PixelIcon kind="book" size={19}/><span>casebook.exe</span>{completed.length>0&&<small>{completed.length}</small>}</button><div className="system-tray"><button aria-label="toggle sound" onClick={()=>setSound(x=>!x)}>{sound?'snd on':'snd off'}</button><button aria-label="view recovered computer clock" onClick={()=>open('clock')}>02:17 am</button></div></footer>
- </main>;
+  function flushDraft(day:number):Promise<void> {
+    clearTimeout(draftTimers.current[day]);
+    const pending=pendingDrafts.current[day];
+    if(!pending)return draftWrites.current[day]||Promise.resolve();
+    delete pendingDrafts.current[day];
+    const write=(draftWrites.current[day]||Promise.resolve()).then(async()=>{
+      const response=await fetch(`/api/chapters/${day}/draft`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(pending),keepalive:true});
+      if(!response.ok)throw new Error('edits could not be saved. check your connection.');
+    }).catch(error=>{
+      // Retain failed edits for the next close, pagehide or retry. Never replace a newer edit.
+      if(!pendingDrafts.current[day]&&modeRef.current===pending.mode)pendingDrafts.current[day]=pending;
+      if(modeRef.current===pending.mode)setToast(error.message);
+    });
+    draftWrites.current[day]=write;
+    return write;
+  }
+  function draftHandler(day:number){
+    if(!draftCallbacks.current[day])draftCallbacks.current[day]=(draft)=>{
+      pendingDrafts.current[day]={mode:modeRef.current,draft};
+      setChapters(previous=>previous[day]?{...previous,[day]:{...previous[day]!,draft}}:previous);
+      clearTimeout(draftTimers.current[day]);
+      draftTimers.current[day]=setTimeout(()=>{void flushDraft(day);},250);
+    };
+    return draftCallbacks.current[day]!;
+  }
+  useEffect(()=>{
+    const flush=()=>{for(const day of Object.keys(pendingDrafts.current))void flushDraft(Number(day));};
+    window.addEventListener('pagehide',flush);
+    return()=>{window.removeEventListener('pagehide',flush);flush();};
+  },[]);
+  function downloadCase(){
+    if(!state||!state.completed.includes(3))return;
+    const text=state.evidence.map(item=>`${item.time} — ${item.title}\n${item.detail}`).join('\n\n');
+    const url=URL.createObjectURL(new Blob([`leah's recovered archive\n\n${text}\n`],{type:'text/plain'}));
+    const link=document.createElement('a');link.href=url;link.download='leah-recovered-archive.txt';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+  function focus(id: AppId) {
+    setActive(id);
+    setOrder(previous => previous[previous.length - 1] === id ? previous : [...previous.filter(x => x !== id), id]);
+  }
+  function focusTitle(id?: AppId) {
+    requestAnimationFrame(() => {
+      const target = id ? document.querySelector<HTMLElement>(`#window-${id} .titlebar`) : document.querySelector<HTMLElement>('.native-menu-trigger');
+      target?.focus({ preventScroll: true });
+    });
+  }
+  function open(id: AppId) {
+    setOpened(previous => previous.includes(id) ? previous : [...previous, id]);
+    setClosed(previous => previous.filter(x => x !== id));
+    setMinimized(previous => previous.filter(x => x !== id));
+    focus(id);
+    focusTitle(id);
+  }
+  function leave(id: AppId, close: boolean) {
+    const day=puzzleApps.indexOf(id)+1;if(day>0)void flushDraft(day);
+    if (close) setClosed(previous => [...previous.filter(x => x !== id), id]);
+    setMinimized(previous => [...previous.filter(x => x !== id), id]);
+    const next = [...order].reverse().find(x => x !== id && opened.includes(x) && !closed.includes(x) && !minimized.includes(x));
+    if (next) focus(next);
+    focusTitle(next);
+  }
+  // Upstream's web fallbacks avoid browser-reserved close-tab shortcuts.
+  const keyboardAction=useRef<(event:KeyboardEvent)=>void>(()=>{});
+  keyboardAction.current=(event)=>{
+    const target=event.target instanceof Element?event.target:null;
+    const editing=!!target?.closest('input,textarea,select,[contenteditable="true"],[role="textbox"]');
+    const command=desktopCommand(event,editing);
+    if(!command)return;
+    const available=opened.filter(id=>!closed.includes(id));
+    if(command==='next-window'){
+      if(available.length<2)return;
+      event.preventDefault();
+      const index=available.indexOf(active);
+      open(available[(index+1)%available.length]!);
+    }else if(available.includes(active)&&!minimized.includes(active)){
+      event.preventDefault();
+      leave(active,command==='close');
+    }
+  };
+  useEffect(()=>{
+    const handle=(event:KeyboardEvent)=>keyboardAction.current(event);
+    window.addEventListener('keydown',handle);
+    return()=>window.removeEventListener('keydown',handle);
+  },[]);
+  async function fetchChapter(day: number, requestedMode = mode, generation = requestGeneration.current) {
+    const key = `${requestedMode}:${day}:${generation}`;
+    if (inFlight.current.has(key)) return;
+    inFlight.current.add(key);
+    try {
+      const data = await api<ChapterData>(`/api/chapters/${day}?mode=${requestedMode}`);
+      if (modeRef.current === requestedMode && requestGeneration.current === generation) {
+        setChapters(previous => ({ ...previous, [day]: data }));
+        setErrors(previous => ({ ...previous, [day]: '' }));
+      }
+    } catch (error) {
+      if (modeRef.current === requestedMode && requestGeneration.current === generation) setErrors(previous => ({ ...previous, [day]: (error as Error).message }));
+    } finally { inFlight.current.delete(key); }
+  }
+  useEffect(() => {
+    let cancelled = false;
+    const generation=++requestGeneration.current;
+    const writes=[...new Set([...Object.keys(pendingDrafts.current),...Object.keys(draftWrites.current)])].map(day=>flushDraft(Number(day)));
+    draftCallbacks.current={};
+    setLoadedMode(null);setBusy(false);setConnectionError('');
+    setState(null); setChapters({}); setResults({}); setHints({}); setErrors({}); setVotes({});
+    setOpened(['messenger']); setClosed([]); setMinimized([]); setActive('messenger'); setOrder(['messenger']);
+    void (async()=>{
+      await Promise.all(writes);
+      if(cancelled||requestGeneration.current!==generation)return;
+      const data=await api<GameState>(`/api/state?mode=${mode}`);
+      if(cancelled||requestGeneration.current!==generation)return;
+      setState(data);setLoadedMode(mode);
+      const day=Math.max(1,Math.min(3,data.completed.length+1,data.unlockedDay||1));
+      const id=puzzleApps[day-1]!;
+      setOpened([id]);setActive(id);setOrder([id]);
+      void fetchChapter(day,mode,generation);
+    })().catch(error=>{if(!cancelled&&requestGeneration.current===generation)setConnectionError(error.message);});
+    return()=>{cancelled=true;};
+  }, [mode, connectionAttempt]);
+  useEffect(() => { if (!toast) return; const timer = setTimeout(() => setToast(''), 5500); return () => clearTimeout(timer); }, [toast]);
+
+  function canOpen(day: number) { return !!state && day <= state.unlockedDay && (day === 1 || state.completed.includes(day - 1)); }
+  function openFile(day: number, replay = false) {
+    if (!state) { open('messenger'); return; }
+    if (!canOpen(day)) { setToast(day > state.unlockedDay ? 'backup not available yet. check again after the next sync.' : 'file dependency missing. check the earlier recovered file.'); return; }
+    if (replay) setResults(previous => { const next = { ...previous }; delete next[day]; return next; });
+    if (!chapters[day]) void fetchChapter(day);
+    open(puzzleApps[day - 1]!);
+  }
+  function ping() {
+    if (!sound) return;
+    try {
+      const context = audioRef.current ?? new AudioContext(); audioRef.current = context; void context.resume();
+      const tone = context.createOscillator(), gain = context.createGain();
+      tone.frequency.setValueAtTime(660, context.currentTime); tone.frequency.setValueAtTime(880, context.currentTime + .12);
+      gain.gain.setValueAtTime(.045, context.currentTime); gain.gain.exponentialRampToValueAtTime(.001, context.currentTime + .3);
+      tone.connect(gain).connect(context.destination); tone.start(); tone.stop(context.currentTime + .31);
+    } catch { /* optional audio */ }
+  }
+  async function solve(day: number, answer: unknown) {
+    if (busy) return;
+    const requestedMode=mode,generation=requestGeneration.current;
+    const isCurrent=()=>modeRef.current===requestedMode&&requestGeneration.current===generation;
+    setBusy(true); setErrors(previous => ({ ...previous, [day]: '' }));
+    try {
+      await flushDraft(day);
+      const result = await api<AttemptResult>(`/api/chapters/${day}/attempt`, { mode:requestedMode, answer });
+      if(!isCurrent())return;
+      if (!result.correct) { setErrors(previous => ({ ...previous, [day]: 'record mismatch. check the attached properties.' })); return; }
+      setResults(previous => ({ ...previous, [day]: result }));
+      const savedState=await api<GameState>(`/api/state?mode=${requestedMode}`);
+      if(!isCurrent())return;
+      setState(savedState);
+      ping(); setToast(`${artifactNames[day - 1]} saved to my notebook.`);
+    } catch (error) { if(isCurrent())setErrors(previous => ({ ...previous, [day]: (error as Error).message })); }
+    finally { if(isCurrent())setBusy(false); }
+  }
+  async function getHint(day: number) {
+    if (busy) return;
+    const requestedMode=mode,generation=requestGeneration.current;
+    const isCurrent=()=>modeRef.current===requestedMode&&requestGeneration.current===generation;
+    setBusy(true);
+    try {
+      const data = await api<{ hint: string; state: GameState }>(`/api/chapters/${day}/hints`, { mode:requestedMode });
+      if(!isCurrent())return;
+      setHints(previous => ({ ...previous, [day]: data.hint })); setState(data.state);
+    } catch (error) { if(isCurrent())setErrors(previous => ({ ...previous, [day]: (error as Error).message })); }
+    finally { if(isCurrent())setBusy(false); }
+  }
+  async function cast(day: number, choice: string) {
+    const requestedMode=mode,generation=requestGeneration.current;
+    const isCurrent=()=>modeRef.current===requestedMode&&requestGeneration.current===generation;
+    try { const data = await api<VoteResult>(`/api/chapters/${day}/votes`, { mode:requestedMode, choice }); if(isCurrent())setVotes(previous => ({ ...previous, [day]: data })); }
+    catch (error) { if(isCurrent())setToast((error as Error).message); }
+  }
+  async function share(day: number) {
+    const text = `last seen online\n${day} file${day === 1 ? '' : 's'} restored · ${state?.hints[String(day)] || 0} hints\nno spoilers.`;
+    try { await navigator.clipboard.writeText(text); setToast('result copied.'); } catch { setToast('clipboard unavailable. your files are still saved.'); }
+  }
+  const visibleDesktopApps: { id: AppId; label: string; action?: () => void }[] = [
+    { id: 'messenger', label: 'messenger', action: () => openFile(1) },
+    { id: 'documents', label: 'my documents' },
+    { id: 'photos', label: 'photos', action: () => openFile(2) },
+    { id: 'notes', label: 'before i forget' },
+    ...(canOpen(3) ? [{ id: 'security' as AppId, label: 'camera archive', action: () => openFile(3) }] : []),
+  ];
+  function puzzleContent(day: number) {
+    const result = loadedMode===mode?results[day]:undefined, chapter = loadedMode===mode?chapters[day]:undefined;
+    return <>
+      {day === 3 && <div className="remote-strip">north café / security archive <span>read-only connection</span></div>}
+      <div className="app-body puzzle-scroll">
+        {result ? <div className="saved-file">
+          <div className="file-properties"><PixelIcon kind={day === 2 ? 'photo' : 'disk'} size={25} /><span>{artifactNames[day - 1]}<small>recovered · saved · {state?.hints[String(day)]||0} hints</small></span></div>
+          <pre className="personal-record">{result.reveal || result.evidence?.detail}</pre>
+          {day === 3 && <section className="case-reconstruction" aria-label="reconstructed archive"><h2>archive reconstructed</h2>{state?.evidence.map((item,index)=><article key={item.day} style={{animationDelay:`${index*120}ms`}}><PixelIcon kind={item.day===2?'photo':item.day===1?'mail':'computer'} size={28}/><div><b>{item.time}</b><p>{item.detail}</p></div></article>)}<button onClick={downloadCase}>save reconstructed archive</button></section>}
+          <div className="compact-actions"><button onClick={() => open('casebook')}>my notebook</button><button onClick={() => share(day)}>copy result</button><button onClick={() => openFile(day, true)}>reopen original</button></div>
+          {day < 3 && (canOpen(day + 1) ? <button className="next-file" onClick={() => openFile(day + 1)}>open {fileNames[day]}</button> : <p className="sync-note">next backup: {state?.nextUnlockAt ? new Date(state.nextUnlockAt).toLocaleString() : 'pending'}</p>)}
+          <details className="community-thread"><summary>community discussion</summary><p>what do you think happened?</p>{votes[day] ? <div role="status"><p>reply posted · {votes[day]!.total} votes</p>{votes[day]!.options.map(option => <p key={option.id}>{option.label}: {votes[day]!.counts[option.id] || 0}</p>)}</div> : <div className="compact-actions">{chapter?.choices?.map(option => <button key={option.id} onClick={() => cast(day, option.id)}>{option.label}</button>)}</div>}</details>
+        </div> : chapter ? <Puzzle key={`${mode}-${day}`} mode={mode} day={day} chapterData={chapter} draft={chapter.draft} onDraft={draftHandler(day)} onSolve={answer => solve(day, answer)} onHint={() => getHint(day)} hint={hints[day]} busy={busy} /> : <div className="connection-state" role="status">{connectionError ? <><p>{connectionError}</p><button onClick={() => setConnectionAttempt(value => value + 1)}>reconnect</button></> : errors[day] ? 'connection lost' : 'restoring session…'}</div>}
+        {errors[day] && <div className="error-box" role="alert">{errors[day]}{!chapter && <button onClick={() => fetchChapter(day)}>retry</button>}</div>}
+      </div>
+      <div className="statusbar"><span>{result ? 'file saved' : chapter ? 'ready' : 'connecting…'}</span><span>{fileNames[day - 1]}</span></div>
+    </>;
+  }
+  function notebook() {
+    return <><nav className="book-tabs" aria-label="notebook sections">{['files', 'timeline', 'people', 'notes'].map(tab => <button key={tab} aria-pressed={tab === bookTab} onClick={() => setBookTab(tab)}>{tab}</button>)}</nav><div className="app-body notebook-page">
+      {bookTab === 'files' ? state?.evidence.length ? state.evidence.map(e => <article className="notebook-entry" key={e.day}><button className="file-link" onClick={() => openFile(e.day)}><PixelIcon kind={e.day === 2 ? 'photo' : 'disk'} size={21} />{fileNames[e.day - 1]}</button><p>{e.detail}</p><small>confirmed · {e.time}</small></article>) : <><p>14 oct</p><p className="pencil-note">someone’s been using my account again.</p><hr /><p className="subtle">no saved attachments.</p></> : bookTab === 'timeline' ? <><p><b>02:02</b> · workstation disconnected.</p><p><b>02:17</b> · outgoing message.{state?.completed.includes(1) ? ' session r17 / reception.' : ' source unconfirmed.'}</p>{state?.evidence.filter(e => e.day > 1).map(e => <p key={e.day}><b>{e.time}</b> · {e.detail}</p>)}</> : bookTab === 'people' ? <><p><b>leah vale</b><br />night shift / this account</p><p><b>noah reed</b><br />reception / signed the report</p><p><b>eli moss</b><br />security / says he left early</p><p><b>{state?.completed.includes(3) ? 'mara vale' : 'unidentified person'}</b><br />{state?.completed.includes(3) ? 'bookkeeper / witness' : 'identity not confirmed'}</p></> : <><p>i keep a copy of everything now.</p><p className="subtle">{state?.evidence.length || 0} saved files · {state?.streak || 0} day streak</p><p className="subtle">help opened {Object.values(state?.hints || {}).reduce((a, b) => a + b, 0)} times</p></>}
+    </div></>;
+  }
+  function content(id: AppId) {
+    const day = puzzleApps.indexOf(id) + 1;
+    if (day > 0) return puzzleContent(day);
+    if (id === 'casebook') return notebook();
+    if (id === 'documents') return <Finder files={[
+      ...fileNames.map((name,i)=>({id:`file-${i}`,name,kind:i===1?'photo':'disk',available:canOpen(i+1),folder:(''+['documents','photos','archive'][i]) as 'documents'|'photos'|'archive',onOpen:()=>openFile(i+1)})),
+      {id:'personal-note',name:'before i forget.txt',kind:'book',available:true,folder:'notes',onOpen:()=>open('notes')},
+      {id:'notebook',name:'my notebook',kind:'book',available:true,folder:'notes',onOpen:()=>open('casebook')}
+    ]}/>;
+    if (id === 'notes') return <div className="app-body notepad"><p>14 oct, before closing</p><p>someone keeps logging into my account after i leave.</p><p>i changed the password again. next time i’m keeping the session log.</p><p>— leah</p></div>;
+    if (id === 'clock') return <div className="app-body clock-panel"><div className="clock-display">02:17 <small>am</small></div><p>thursday, 14 october 2004</p><p className="subtle">north café / leah’s workstation</p></div>;
+    if (id === 'testing') return <div className="app-body testing-panel"><h2>judge access</h2><p>separate saves. files still open in order.</p><div className="compact-actions"><button disabled={busy} aria-pressed={mode === 'daily'} onClick={() => setMode('daily')}>daily</button><button disabled={busy} aria-pressed={mode === 'demo'} onClick={() => setMode('demo')}>judge demo</button></div>{puzzleApps.map((app, i) => <button className="file-row" key={app} onClick={() => openFile(i + 1)}>{i + 1}. {applications[app].title}</button>)}<p className="subtle">mode: {mode} · saved: {state?.completed.join(', ') || 'none'}</p></div>;
+    return <div className="app-body help-page"><h2>source &amp; license</h2><p>desktop components adapted from ryos. copyright © 2025 ryo lu. modified for last seen online. agpl-3.0-only; no warranty.</p><p><a href="/source.zip" download>download corresponding source</a> · <a href="/license.txt" target="_blank" rel="noreferrer">read license</a></p><h2>window controls</h2><p>drag a title bar to move a window. double-click it to maximize. arrow keys move a focused title bar.</p><p>use the dock to switch between open applications. keyboard: alt + w closes a window; alt + m minimizes it; alt + ` switches apps. shortcuts leave text fields alone.</p><p><button onClick={() => setSound(value => !value)}>sound: {sound ? 'on' : 'off'}</button></p><h2>file help</h2><p>the help button inside each application opens its local help file. new attachments are saved in my notebook.</p><p className="subtle">all accounts and records in this application are fictional.</p></div>;
+  }
+  const menus:GameMenu[]=[
+    {label:'system',icon:<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1 15 8 8 15 1 8z" fill="#71829b" stroke="#273347"/><path d="M8 4 12 8 8 12 4 8z" fill="#eef7ff"/></svg>,items:[{label:'about this computer',action:()=>open('clock')},{label:'source, license & help',action:()=>open('help')},null,...(testingEnabled?[{label:'judge access',action:()=>open('testing')}]:[])]},
+    {label:applications[active].title.split(' — ')[0]!,items:[{label:'hide window',shortcut:'alt + m',action:()=>leave(active,false)},null,{label:'close window',shortcut:'alt + w',action:()=>leave(active,true)}]},
+    {label:'file',items:[{label:'open documents',action:()=>open('documents')},{label:'open messenger',action:()=>openFile(1)},{label:'open photo',disabled:!canOpen(2),action:()=>openFile(2)},{label:'open camera archive',disabled:!canOpen(3),action:()=>openFile(3)},null,{label:'my notebook',action:()=>open('casebook')}]},
+    {label:'window',items:opened.filter(id=>!closed.includes(id)).map(id=>({label:applications[id].title,action:()=>open(id)}))},
+    {label:'help',items:[{label:'application help',disabled:busy,action:()=>{const day=puzzleApps.indexOf(active)+1;if(day>0&&chapters[day])void getHint(day);else open('help');}},{label:`sound: ${sound?'on':'off'}`,action:()=>setSound(value=>!value)},{label:'source & license',action:()=>open('help')}]}
+  ];
+  return <main className="desktop" aria-label="leah’s desktop">
+    <RyosMenuBar menus={menus} clock="thu 02:17 am" onClock={()=>open('clock')}/>
+    <div className="workspace">
+      <nav className="desktop-icons" aria-label="desktop applications">{visibleDesktopApps.map(app => <button className="desktop-icon" key={app.id} onClick={app.action || (() => open(app.id))}><PixelIcon kind={applications[app.id].kind} size={32} /><span>{app.label}</span></button>)}</nav>
+      <div className="desktop-owner" aria-hidden="true">leah_v<span>north café · workstation 04</span></div>
+      {opened.map(id => <DesktopWindow key={`${mode}-${id}`} id={id} title={applications[id].title} icon={<PixelIcon kind={applications[id].kind} size={16} />} initial={applications[id]} active={active === id} zIndex={10 + order.indexOf(id)} closed={closed.includes(id)} minimized={minimized.includes(id)} onFocus={() => focus(id)} onMinimize={() => leave(id, false)} onClose={() => leave(id, true)}>
+        <nav className="menubar" aria-label={`${applications[id].title} menu`}><button onClick={() => open('documents')}>file</button><button onClick={() => open('casebook')}>notebook</button><button onClick={() => { const d = puzzleApps.indexOf(id) + 1; if (d > 0 && chapters[d]) void getHint(d); else open('help'); }} disabled={busy}>help</button></nav>
+        {content(id)}
+      </DesktopWindow>)}
+      {toast && <div className="toast window" role="status"><PixelIcon kind="disk" size={22} /><span>{toast}</span><button aria-label="dismiss notification" onClick={() => setToast('')}>×</button></div>}
+
+    </div>
+    <RyosDock items={[...new Set<AppId>(['documents','messenger','photos','casebook',...(canOpen(3)?['security' as AppId]:[]),...opened])].map(id=>({id,title:applications[id].title,icon:<PixelIcon kind={applications[id].kind} size={40}/>,open:opened.includes(id)&&!closed.includes(id),active:active===id&&!minimized.includes(id),onClick:()=>{const d=puzzleApps.indexOf(id)+1;if(d>0)openFile(d);else open(id);}}))}/>
+
+  </main>;
 }

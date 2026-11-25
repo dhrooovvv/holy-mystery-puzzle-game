@@ -17,7 +17,7 @@ a three-day mystery played through one tactile computer puzzle per day. target s
 one self-contained fictional case, three different puzzle mechanics, persistent evidence, daily gates, replay, catch-up, optional theory voting, and an isolated judge demo. no external backend required on reddit. unreleased answers stay server-side.
 
 ## Brand Commitments
-windows classic: teal desktop, gray bevelled windows, navy title bars, original pixel icons. lowercase copy. immediate interaction and no long boot sequence.
+user-approved mac os x / aqua direction, adapted from real ryos source. purple/blue wallpaper, top menu, dock and traffic-light controls. lowercase copy and immediate interaction.
 
 ## Accessibility & Inclusion
 large touch targets, full-screen mobile panels, keyboard controls, reduced motion, optional user-initiated audio, no sound-only clues.

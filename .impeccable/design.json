@@ -1,132 +1,136 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-24T00:00:00Z",
+  "generatedAt": "2026-11-24T12:53:30.378404+00:00",
   "title": "design system: last seen online",
   "extensions": {
     "colorMeta": {
-      "desktop-teal": {
+      "wallpaper-blue": {
         "role": "primary",
-        "displayName": "desktop teal"
+        "displayName": "wallpaper blue"
       },
-      "active-navy": {
+      "wallpaper-purple": {
         "role": "secondary",
-        "displayName": "active navy"
+        "displayName": "wallpaper purple"
       },
-      "window-silver": {
+      "wallpaper-deep": {
         "role": "neutral",
-        "displayName": "window silver"
+        "displayName": "deep indigo"
       },
-      "evidence-paper": {
+      "chrome-light": {
         "role": "neutral",
-        "displayName": "evidence paper"
+        "displayName": "silver highlight"
+      },
+      "chrome-dark": {
+        "role": "neutral",
+        "displayName": "silver shade"
+      },
+      "aqua-blue": {
+        "role": "secondary",
+        "displayName": "aqua selection blue"
       }
     },
     "shadows": [
       {
-        "name": "raised-bevel",
-        "value": "inset 1px 1px white,inset -1px -1px #222,inset 2px 2px #dedede,inset -2px -2px #808080",
-        "purpose": "raised controls and window chrome."
+        "name": "window",
+        "value": "0 12px 36px #0005",
+        "purpose": "overlapping application elevation."
       },
       {
-        "name": "desktop-window",
-        "value": "8px 12px 26px #0033334d",
-        "purpose": "ambient separation of the main window from the desktop."
+        "name": "dock",
+        "value": "inset 0 1px #fff9,0 4px 15px #09092155",
+        "purpose": "aqua dock reflection and elevation."
       }
     ],
     "motion": [
       {
-        "name": "reveal",
-        "value": "250ms ease-out",
-        "purpose": "saved notification entrance, disabled with reduced motion."
+        "name": "dock",
+        "value": "150ms ease-out",
+        "purpose": "dock hover lift and scale; up to -7px and 1.18."
       },
       {
-        "name": "switch",
-        "value": "150ms",
-        "purpose": "circuit switch position change, disabled with reduced motion."
+        "name": "notify",
+        "value": "180ms ease-out",
+        "purpose": "saved notification entrance."
       }
     ],
     "breakpoints": [
       {
-        "name": "compact-desktop",
-        "value": "1000px"
-      },
-      {
-        "name": "mobile-panel",
+        "name": "puzzle-touch-controls",
         "value": "700px"
       },
       {
-        "name": "stacked-choices",
-        "value": "560px"
+        "name": "fullscreen-application",
+        "value": "620px"
       }
     ]
   },
   "components": [
     {
-      "name": "primary button",
+      "name": "aqua button",
       "kind": "button",
-      "refersTo": "button-primary",
-      "description": "main shell action with navy fill.",
-      "html": "<button class=\"ds-primary\">return to investigation</button>",
-      "css": ".ds-primary{font:13px Tahoma,Verdana,Arial,sans-serif;border:0;border-radius:0;box-shadow:inset 1px 1px white,inset -1px -1px #222,inset 2px 2px #dedede,inset -2px -2px #808080;cursor:pointer;background:#000080;color:#fff;padding:12px 22px;font-weight:bold}.ds-primary:hover{background:#15159b}.ds-primary:focus-visible{outline:2px dotted #fff;outline-offset:-5px}.ds-primary:active{box-shadow:inset 1px 1px #222,inset -1px -1px #fff}"
+      "refersTo": "button",
+      "description": "silver application action.",
+      "html": "<button class=\"ds-button\">my notebook</button>",
+      "css": ".ds-button{font:12px/1.45 \"Lucida Grande\",\"Lucida Sans Unicode\",Arial,sans-serif;color:#191919;border:1px solid #a4a4a4;border-radius:4px;background:linear-gradient(#fff,#ddd);box-shadow:inset 0 1px #fff,0 1px 2px #0002;padding:4px 10px;min-height:25px;cursor:pointer;}.ds-button:hover{filter:brightness(1.04)}.ds-button:active{background:linear-gradient(#ddd,#fff)}.ds-button:focus-visible{outline:2px solid #3c82da;outline-offset:1px}"
     },
     {
-      "name": "secondary button",
-      "kind": "button",
-      "refersTo": "button-secondary",
-      "description": "raised silver control.",
-      "html": "<button class=\"ds-secondary\">view evidence</button>",
-      "css": ".ds-secondary{font:13px Tahoma,Verdana,Arial,sans-serif;border:0;border-radius:0;box-shadow:inset 1px 1px white,inset -1px -1px #222,inset 2px 2px #dedede,inset -2px -2px #808080;cursor:pointer;background:#c0c0c0;color:#202323;padding:9px 14px;min-height:36px}.ds-secondary:hover{background:#d0d0d0}.ds-secondary:focus-visible{outline:2px dotted #000080;outline-offset:-5px}.ds-secondary:active{box-shadow:inset 1px 1px #222,inset -1px -1px #fff,inset 2px 2px #808080}"
-    },
-    {
-      "name": "record field",
-      "kind": "input",
-      "description": "sunken field for selecting a timestamp correction.",
-      "html": "<label class=\"ds-field\">camera correction <select><option>+0 minutes</option><option>+19 minutes</option></select></label>",
-      "css": ".ds-field{font:12px Tahoma,Verdana,Arial,sans-serif;color:#24351e;display:flex;gap:12px;align-items:center}.ds-field select{min-height:36px;background:#f7f8ed;border-radius:0;border:2px solid;border-color:#737e66 #fff #fff #737e66;padding:5px;color:#24351e}.ds-field select:focus-visible{outline:2px dashed #000080;outline-offset:3px}"
-    },
-    {
-      "name": "chapter navigation",
-      "kind": "nav",
-      "description": "ordered tabs for the three released chapters.",
-      "html": "<nav class=\"ds-tabs\"><button aria-current=\"step\">01 the message</button><button>02 the reflection</button><button>03 the camera</button></nav>",
-      "css": ".ds-tabs{display:flex;gap:5px;padding:10px 12px 0;background:#c6c6be;border-bottom:1px solid #818179}.ds-tabs button{font:11px Tahoma,Verdana,Arial,sans-serif;background:#c6c6be;border:0;padding:8px 14px;min-height:42px;box-shadow:inset 1px 1px #f8f8ed,inset -1px 0 #7d7d72;cursor:pointer}.ds-tabs button[aria-current]{background:#eeeee6}.ds-tabs button:hover{background:#deded3}.ds-tabs button:focus-visible{outline:2px dotted #000080;outline-offset:-5px}"
-    },
-    {
-      "name": "classic window",
+      "name": "aqua window",
       "kind": "custom",
       "refersTo": "titlebar",
-      "description": "one focused application with bevelled outer chrome.",
-      "html": "<section class=\"ds-window\"><header class=\"ds-title\">messenger.exe</header><div class=\"ds-content\">her computer shut down at 2:02 am.</div></section>",
-      "css": ".ds-window{padding:3px;background:#c0c0c0;box-shadow:inset 1px 1px white,inset -1px -1px #222,inset 2px 2px #dedede,inset -2px -2px #808080;font:13px Tahoma,Verdana,Arial,sans-serif;color:#202323}.ds-title{height:29px;display:flex;align-items:center;padding:0 6px;background:#000080;color:#fff;font-size:12px;font-weight:bold}.ds-content{background:#f5f3e9;padding:25px 28px;line-height:1.65}"
+      "description": "silver rounded application with independent content scrolling.",
+      "html": "<section class=\"ds-window\"><header class=\"ds-title\">leah_v \u2014 messenger</header><div class=\"ds-body\">01:58 leah_v<p>closing up. back tomorrow.</p></div></section>",
+      "css": ".ds-window{font:12px/1.45 \"Lucida Grande\",\"Lucida Sans Unicode\",Arial,sans-serif;color:#191919;background:#ededed;border:1px solid #686976;border-radius:7px;width:310px;height:150px;display:flex;flex-direction:column;box-shadow:0 12px 36px #0005;overflow:hidden}.ds-title{height:29px;min-height:29px;background:linear-gradient(#f6f6f6,#c4c4c4);border-bottom:1px solid #939393;padding:4px 9px;text-align:center;font-size:12px}.ds-body{min-height:0;overflow:auto;flex:1;background:#fff;padding:10px 13px}.ds-body p{margin:3px 0}"
     },
     {
-      "name": "recovered records",
+      "name": "traffic lights",
       "kind": "custom",
-      "description": "expandable artifact facts, accessible through native disclosure.",
-      "html": "<details class=\"ds-records\"><summary>recovered records</summary><p>session r17: reception \u00b7 active 01:48\u201302:21</p></details>",
-      "css": ".ds-records{padding:9px 10px;background:#e5e7d8;border:1px solid #a0a58f;font:11px/1.5 Tahoma,Verdana,Arial,sans-serif;color:#21251f}.ds-records summary{cursor:pointer;color:#405438;min-height:24px}.ds-records summary:focus-visible{outline:2px dashed #000080;outline-offset:3px}.ds-records p{margin:8px 0 0}"
+      "description": "close, minimize, and maximize or restore.",
+      "html": "<div class=\"ds-traffic\"><button class=\"ds-red\" aria-label=\"close\">\u00d7</button><button class=\"ds-yellow\" aria-label=\"minimize\">\u2212</button><button class=\"ds-green\" aria-label=\"maximize or restore\">+</button></div>",
+      "css": ".ds-traffic{display:flex;gap:7px;padding:8px;background:#dedede}.ds-traffic button{border-radius:50%;width:13px;height:13px;min-height:13px;padding:0;border:1px solid #0005;box-shadow:inset 0 1px 1px #fff9,0 1px 1px #0003;font:10px/1 Arial;cursor:pointer}.ds-red{background:radial-gradient(circle at 35% 25%,#ffdfd4,#f45e53 60%,#c53b35)}.ds-yellow{background:radial-gradient(circle at 35% 25%,#fff8bd,#f5c948 60%,#c29b28)}.ds-green{background:radial-gradient(circle at 35% 25%,#d8ffbd,#7fc94c 60%,#4d9227)}.ds-traffic button:focus-visible{outline:2px solid #3c82da;outline-offset:2px}"
+    },
+    {
+      "name": "top menu",
+      "kind": "nav",
+      "description": "fixed desktop menu with active application and file access.",
+      "html": "<nav class=\"ds-menu\"><b>messenger</b><button>file</button><button>notebook</button><button>help</button></nav>",
+      "css": ".ds-menu{font:12px/1.45 \"Lucida Grande\",\"Lucida Sans Unicode\",Arial,sans-serif;color:#191919;display:flex;align-items:center;gap:4px;padding:0 12px;height:25px;background:linear-gradient(#fff,#d8d8df);box-shadow:0 1px 3px #0005}.ds-menu button{font:inherit;border:0;border-radius:0;box-shadow:none;min-height:25px;padding:2px 9px;background:transparent;cursor:pointer}.ds-menu button:hover{background:#3676cf;color:white}.ds-menu button:focus-visible{outline:1px dotted #000080;outline-offset:-4px}"
+    },
+    {
+      "name": "dock item",
+      "kind": "nav",
+      "refersTo": "dock",
+      "description": "translucent dock with running indicator and original purple application mark.",
+      "html": "<nav class=\"ds-dock\"><button aria-label=\"messenger\"><svg width=\"39\" height=\"39\" viewBox=\"0 0 40 40\" aria-hidden=\"true\"><rect x=\"3\" y=\"5\" width=\"34\" height=\"28\" rx=\"6\" fill=\"#9473d3\"/><path d=\"m8 12 12 10 12-10\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2\"/></svg><i></i></button></nav>",
+      "css": ".ds-dock{display:flex;align-items:center;gap:8px;height:64px;padding:5px 12px;border:1px solid #ffffffa6;border-radius:13px;background:linear-gradient(#e0e6ff99,#a5abc766);box-shadow:inset 0 1px #fff9,0 4px 15px #09092155;backdrop-filter:blur(12px);width:max-content}.ds-dock button{position:relative;border:0;border-radius:8px;background:transparent;box-shadow:none;width:49px;height:49px;padding:5px;cursor:pointer;transition:transform .15s ease-out}.ds-dock button:hover{transform:translateY(-7px) scale(1.18)}.ds-dock button:focus-visible{outline:2px solid #3c82da;outline-offset:1px}.ds-dock i{position:absolute;bottom:-5px;left:23px;width:4px;height:4px;border-radius:50%;background:#17224b;box-shadow:0 1px #fff8}"
+    },
+    {
+      "name": "file row",
+      "kind": "custom",
+      "description": "file manager action with filename and type.",
+      "html": "<button class=\"ds-file\"><span>corridor_0209.bmp</span><small>recovered file</small></button>",
+      "css": ".ds-file{font:12px/1.45 \"Lucida Grande\",\"Lucida Sans Unicode\",Arial,sans-serif;color:#191919;display:flex;align-items:center;gap:8px;width:100%;background:white;box-shadow:none;border:0;min-height:36px;padding:5px 11px;text-align:left;font-size:11px;cursor:pointer}.ds-file small{margin-left:auto;width:115px;font-size:10px;color:#666}.ds-file:hover{background:#3777cd;color:#fff}.ds-file:hover small{color:#fff}.ds-file:focus-visible{outline:1px dotted #000080;outline-offset:-4px}"
     }
   ],
   "narrative": {
     "northStar": "a secret inside an old computer",
-    "overview": "the supplied windows-classic direction governs the interface: teal desktop, silver bevels, navy active title bars, original pixel icons, and compact applications. evidence is shown in the application that reveals it. the desktop is usable scenery, while the active puzzle receives the strongest hierarchy.",
+    "overview": "the approved desktop identity is aqua macos: a blue-purple wallpaper, a top menu, silver rounded windows, colored traffic-light controls, and a translucent magnifying dock. original purple application icons distinguish this fictional computer. the mystery remains inside messages, photographs, records, and the camera archive.",
     "keyCharacteristics": [
-      "square windows and tactile raised or sunken controls.",
-      "short lowercase copy with legible evidence and timestamps.",
-      "an immediate mystery, with no boot sequence.",
-      "responsive application panels and optional audio."
+      "independent overlapping applications with internal scrolling.",
+      "centered silver title bars and red, yellow, green window controls.",
+      "top menu and bottom dock instead of a taskbar.",
+      "compact lowercase copy and full-screen active applications on phones."
     ],
     "rules": [],
     "dos": [
-      "do preserve the pinned classic desktop palette and square bevel language.",
-      "do make the puzzle artifact larger and clearer than its controls.",
-      "do pair every diagram state with a text label and provide keyboard controls.",
-      "do keep every visible control functional."
+      "do preserve the approved aqua menu, dock, traffic lights, and silver chrome.",
+      "do keep scrolling within applications and the desktop within the viewport.",
+      "do retain original purple icons and the compact application scale.",
+      "do pair visual state with accessible text or semantic control state."
     ],
     "donts": [
-      "don't introduce glass, rounded dashboard cards, or decorative hacker terminals.",
-      "don't require precision dragging, audio, or external research to solve a chapter.",
-      "don't claim the two-to-four-minute target is measured without human playtesting."
+      "don't restore the discarded teal desktop, navy title bars, or bottom taskbar.",
+      "don't add an outer game dashboard or large promotional headings.",
+      "don't require precise dragging, audio, or external research to solve a chapter."
     ]
   }
 }
