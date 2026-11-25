@@ -3,25 +3,41 @@ export const DAY=86_400_000;
 // Set once for the three-day case; new posts share this release calendar.
 export const CASE_RELEASE=Date.UTC(2026,10,24);
 export const chapters:Chapter[]=[
- {day:1,title:'the impossible message',hook:'her computer shut down at 2:02 am. at 2:17, it sent one final message. somebody is lying.',objective:'trace the final message to the computer that actually sent it.'},
- {day:2,title:'the missing reflection',hook:'the last surviving security photograph is almost completely black. someone tried very hard to make sure it stayed that way.',objective:'restore the photograph. identify the person beside leah.'},
- {day:3,title:'the dead camera',hook:'the security camera was officially dead. but something kept it recording for another nineteen minutes.',objective:'restore the recording path and reconcile the camera clock.'}
+ {day:1,title:'messenger — leah_v',hook:'02:02 — workstation disconnected. 02:17 — outgoing message.',objective:'message properties: sender session unavailable in conversation view.'},
+ {day:2,title:'photo lab — corridor_0209.bmp',hook:'image recovered from deleted files. exposure settings unavailable.',objective:'adjust exposure and fragment alignment. staff reference attached.'},
+ {day:3,title:'security — cam 02',hook:'main supply: disconnected. backup recording available.',objective:'camera power and time settings require attention.'}
 ];
 const evidence:Evidence[]=[
- {day:1,title:'the forged farewell',detail:'message session r17 belongs to reception. noah reed signed the missing-person report and claimed no one used that terminal after 2:02.',time:'02:17 am'},
- {day:2,title:'someone in the reflection',detail:'the guard, eli moss, wears two yellow sleeve stripes. he was beside leah and a third person at the rear exit after the reported disappearance.',time:'02:09 am'},
- {day:3,title:'nineteen stolen minutes',detail:'backup power kept the camera recording. its clock ran nineteen minutes slow. leah and eli escorted mara, a witness carrying the café owner’s falsified wage ledger, to the rear exit. noah forged the farewell to discredit them.',time:'02:09–02:17 am'}
+ {day:1,title:'session_report.txt',detail:'02:17 message → r17 → reception. report signed: noah reed. statement: reception unattended after 02:02.',time:'02:17 am'},
+ {day:2,title:'corridor_0209.bmp',detail:'02:09, rear exit. leah + eli moss + one unidentified person. eli: two yellow sleeve stripes. captured after workstation shutdown.',time:'02:09 am'},
+ {day:3,title:'cam02_restored.rec',detail:'backup recording; camera clock −19 minutes. leah + eli escorted mara and the copied wage ledger out. 02:17: noah used leah’s reception session to forge the farewell.',time:'02:09–02:17 am'}
 ];
 export const reveals=[
- 'leah’s machine never sent the message. reception did. the person who filed the report had access to both the terminal and the story.',
- 'eli did not abduct leah. the photograph shows him opening the rear door for her and someone carrying a ledger. why hide a rescue?',
- 'mara was the café’s bookkeeper. she had copied evidence of stolen wages; leah and eli helped her reach a waiting witness liaison. leah stayed with her to give evidence. noah, the owner’s nephew, used leah’s still-open reception session to forge a farewell and make the ledger look like a runaway’s invention. the disappearance was an escape. the message was the cover-up.'
+ 'message 1042: sent from reception, session r17. leah’s workstation: disconnected at 02:02. report signed by noah reed: “reception was unattended after 02:02.”',
+ 'i asked eli to open the rear door. we had the ledger with us. i put the meeting in my calendar so i wouldn’t forget. — leah',
+ 'mara copied the owner’s wage ledger. it was proof of stolen wages. she was the bookkeeper; she knew what he had taken. eli and i got her to the witness liaison at the rear exit. i stayed to give evidence. noah is the owner’s nephew. he had orders to destroy mara’s copy. he used my open reception session to send that farewell, so the ledger would look like something a runaway made up. i didn’t send it. — leah, witness statement'
 ];
 export const hintLadders=[
- ['open message information. match its session id, not the account name.','r17 appears in the reception session log. the report claims reception was unused.'],
- ['raise the exposure until the reflection is readable, then line up the two halves.','aim for a clear exposure around 75; align the partition seam at zero. compare sleeve stripes.'],
- ['main power failed. route backup through the relay; use the witnessed door event to fix the slow clock.','switch main off, backup and relay on. the verified 02:09 event appears at 01:50: add nineteen minutes.']
+ ['open the final message’s properties; its account name is not its sending computer.','follow the outgoing session id into the session register, then inspect that record’s terminal.','link the message’s r17 session to reception and attach the matching session register.'],
+ ['use the image controls to inspect the glass partition.','the displaced fragment breaks the partition seam; the reflected sleeve matches a staff photo.','raise exposure near 75, line up the glass at zero, then tag the matching yellow-striped jacket.'],
+ ['inspect the maintenance note beside the camera’s power diagram.','backup power must travel through the relay; compare the door event with the recording clock.','isolate main power and connect backup through the relay. the 01:50 camera event needs +19 minutes.']
 ];
+
+/** Drafts are untrusted UI edits, never proof that a puzzle was solved. */
+export function validateDraft(day:number,value:unknown):value is Record<string,unknown>{
+ if(!value||typeof value!=='object'||Array.isArray(value))return false;
+ const draft=value as Record<string,unknown>;
+ const bool=(v:unknown)=>typeof v==='boolean';
+ const numeric=(min:number,max:number,integer=false)=>(v:unknown)=>typeof v==='number'&&Number.isFinite(v)&&v>=min&&v<=max&&(!integer||Number.isInteger(v));
+ const choice=(values:string[])=>(v:unknown)=>typeof v==='string'&&values.includes(v);
+ const schemas:Record<number,Record<string,(value:unknown)=>boolean>>={
+  1:{inspecting:bool,selectedSession:choice(['','l04','r17','b02']),terminal:choice(['','workstation','reception','back-office']),evidence:choice(['','shutdown-l04','shutdown-w04','session-l04','session-r17','session-b02'])},
+  2:{exposure:numeric(0,100),alignment:numeric(-40,40),person:choice(['','guard','receptionist','leah']),zoom:bool},
+  3:{main:bool,backup:bool,relay:bool,offset:numeric(0,30,true),conclusion:choice(['','protected-witness','guard-abduction','leah-forgery']),frame:numeric(0,2,true)}
+ };
+ const schema=schemas[day];
+ return !!schema&&Object.entries(draft).every(([key,field])=>Object.hasOwn(schema,key)&&schema[key]!(field));
+}
 export const theoryOptions=[{id:'cover-up',label:'a forged disappearance'},{id:'rescue',label:'a secret rescue'},{id:'abduction',label:'an inside-job abduction'}];
 export type Progress={completed:number[];hints:Record<string,number>;streak:number;lastDate?:string;votes:Record<string,string>;metrics:GameState['metrics']};
 export const emptyProgress=():Progress=>({completed:[],hints:{},streak:0,votes:{},metrics:{}});
@@ -34,10 +50,10 @@ export function canAccess(day:number,p:Progress,mode:Mode,now:number){return Num
 export function chapterData(day:number):ChapterData{
  const clues=[
   ['message id 1042 • account leah.vale • outgoing session r17','session l04: leah workstation • disconnected 02:02','session r17: reception • active 01:48–02:21','report signed noah reed: reception was unattended after 02:02'],
-  ['reference: eli moss, security guard — two yellow stripes on the left sleeve.','noah reed, reception — plain burgundy cardigan.','rear door access log: opened at 02:09. the image was not taken before shutdown.','witness liaison appointment: bookkeeper + ledger; rear exit. copied from leah’s calendar.'],
-  ['maintenance: main power failed at 02:02. backup battery feeds the relay, then the camera.','verified door event: 02:09. the camera shows that same door opening at 01:50.','witness intake: mara vale, bookkeeper. evidence: stolen-wage ledger. escort: leah vale + eli moss.','payroll memo: noah reed, owner’s nephew, was instructed to destroy mara’s copied ledger.']
+  ['reference: eli moss, security guard — two yellow stripes on the left sleeve.','noah reed, reception — plain burgundy cardigan.','rear door access log: opened 02:09. workstation shutdown: 02:02.','leah’s calendar: witness liaison; bookkeeper + ledger; rear exit.'],
+  ['maintenance: main power failed at 02:02. backup battery feeds the relay, then the camera.','door log: opened 02:09. matching camera frame: 01:50.','witness intake: mara vale, bookkeeper. evidence: stolen-wage ledger. escort: leah vale + eli moss.','payroll memo: noah reed, owner’s nephew, was instructed to destroy mara’s copied ledger.']
  ];
- return {...chapters[day-1]!,choices:theoryOptions,clues:clues[day-1]!,...(day===3?{footage:['01:50 • eli opens the rear door. leah is at his side.','01:51 • mara follows with the ledger; a liaison waits outside.','01:58 • at reception, noah types into leah’s open messenger session.'],note:'the witness intake names mara vale and the stolen-wage ledger. noah, the owner’s nephew, had orders to destroy the copy. leah and eli escorted mara to a witness liaison.'}:{})};
+ return {...chapters[day-1]!,choices:theoryOptions,clues:clues[day-1]!,...(day===3?{footage:['01:50 • eli opens the rear door. leah is at his side.','01:51 • mara follows with the ledger; a liaison waits outside.','01:58 • at reception, noah types into leah’s open messenger session.'],note:'witness intake: mara vale, bookkeeper; copied wage ledger. escorts: leah vale, eli moss. payroll memo: noah reed, owner’s nephew — destroy mara’s copy.'}:{})};
 }
 export function validateAnswer(day:number,answer:unknown):boolean{
  if(!answer||typeof answer!=='object'||Array.isArray(answer))return false;

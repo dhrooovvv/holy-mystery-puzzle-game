@@ -1,3 +1,4 @@
+import './package-source.mjs';
 import { spawn } from 'node:child_process';
 import { build } from 'esbuild';
 await build({entryPoints:['src/server/local.ts'],outfile:'.local/server.mjs',bundle:true,platform:'node',format:'esm',packages:'external'});

@@ -7,6 +7,6 @@ export type GameState = {
   chapters: Chapter[]; storage: 'local' | 'reddit'; votes: Record<string,string>;
   metrics: Record<string,{attempts:number;startedAt:string;completedAt?:string}>;
 };
-export type ChapterData = Chapter & {clues: string[]; footage?:string[]; note?:string; choices?:{id:string;label:string}[]};
+export type ChapterData = Chapter & {draft?:Record<string,unknown>;clues: string[]; footage?:string[]; note?:string; choices?:{id:string;label:string}[]};
 export type AttemptResult = {correct:boolean; message:string; state?:GameState; evidence?:Evidence; reveal?:string};
 export type VoteResult = {choice:string; total:number; counts:Record<string,number>; options:{id:string;label:string}[]};

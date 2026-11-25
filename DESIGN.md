@@ -1,51 +1,54 @@
 ---
 name: last seen online
-description: a recovered desktop with a mystery inside
+description: a mystery inside an aqua desktop
 colors:
-  desktop-teal: "#008080"
-  active-navy: "#000080"
-  window-silver: "#c0c0c0"
-  evidence-paper: "#f5f3e9"
-  game-paper: "#eeeee6"
-  ink: "#202323"
-  edge-light: "#ffffff"
-  edge-dark: "#525252"
+  wallpaper-blue: "#192d68"
+  wallpaper-purple: "#4c397d"
+  wallpaper-deep: "#171f45"
+  chrome-light: "#f6f6f6"
+  chrome-dark: "#c4c4c4"
+  application: "#ececec"
+  document: "#fffef6"
+  ink: "#191919"
+  aqua-blue: "#3777cd"
 typography:
-  headline:
-    fontFamily: "Tahoma, Verdana, Arial, sans-serif"
-    fontSize: "25px"
-    fontWeight: 700
-    lineHeight: 1.18
-    letterSpacing: "-0.6px"
   body:
-    fontFamily: "Tahoma, Verdana, Arial, sans-serif"
-    fontSize: "13px"
+    fontFamily: "Lucida Grande, Lucida Sans Unicode, Arial, sans-serif"
+    fontSize: "12px"
     fontWeight: 400
-    lineHeight: 1.65
+    lineHeight: 1.45
+  window-title:
+    fontFamily: "Lucida Grande, Lucida Sans Unicode, Arial, sans-serif"
+    fontSize: "12px"
+    fontWeight: 400
+  puzzle:
+    fontFamily: "Tahoma, Verdana, Arial, sans-serif"
+    fontSize: "12px"
+    lineHeight: 1.45
   record:
     fontFamily: "Courier New, monospace"
-    fontSize: "11px"
+    fontSize: "10px"
 rounded:
-  square: "0px"
+  control: "4px"
+  window: "7px"
+  dock: "13px"
 spacing:
-  compact: "8px"
-  control: "14px"
-  window: "26px"
+  compact: "5px"
+  regular: "8px"
+  titlebar: "9px"
 components:
-  button-primary:
-    backgroundColor: "{colors.active-navy}"
-    textColor: "{colors.edge-light}"
-    rounded: "{rounded.square}"
-    padding: "12px 22px"
-  button-secondary:
-    backgroundColor: "{colors.window-silver}"
+  button:
     textColor: "{colors.ink}"
-    rounded: "{rounded.square}"
-    padding: "9px 14px"
+    rounded: "{rounded.control}"
+    padding: "4px 10px"
+    height: "25px"
   titlebar:
-    backgroundColor: "{colors.active-navy}"
-    textColor: "{colors.edge-light}"
+    textColor: "{colors.ink}"
     height: "29px"
+  dock:
+    rounded: "{rounded.dock}"
+    padding: "5px 12px"
+    height: "64px"
 ---
 
 # design system: last seen online
@@ -54,52 +57,54 @@ components:
 
 **creative north star: "a secret inside an old computer"**
 
-the supplied windows-classic direction governs the interface: teal desktop, silver bevels, navy active title bars, original pixel icons, and compact applications. evidence is shown in the application that reveals it. the desktop is usable scenery, while the active puzzle receives the strongest hierarchy.
+the approved desktop identity is aqua macos: a blue-purple wallpaper, a top menu, silver rounded windows, colored traffic-light controls, and a translucent magnifying dock. original purple application icons distinguish this fictional computer. the mystery remains inside messages, photographs, records, and the camera archive.
 
 **key characteristics:**
 
-- square windows and tactile raised or sunken controls.
-- short lowercase copy with legible evidence and timestamps.
-- an immediate mystery, with no boot sequence.
-- responsive application panels and optional audio.
+- independent overlapping applications with internal scrolling.
+- centered silver title bars and red, yellow, green window controls.
+- top menu and bottom dock instead of a taskbar.
+- compact lowercase copy and full-screen active applications on phones.
 
 ## Colors
 
-desktop teal belongs to the outer workspace. active navy marks the focused window, primary actions, and selected chapter. silver belongs to operating-system chrome. warm paper separates recovered evidence from the machine around it. green indicators communicate a surviving connection or recovered circuit; color is paired with a label.
+the wallpaper blends blue, purple, and deep indigo with restrained pink and blue radial light. chrome moves from near-white to silver. application interiors use pale gray; notes, notebook, and saved records use warm paper. blue marks menus, links, and selected notebook tabs. traffic-light red, yellow, and green communicate close, minimize, and maximize or restore, with accessible action labels. dark camera interiors retain legible light captions.
 
 ## Typography
 
-tahoma with verdana and arial fallbacks carries interface text. the current main chapter headline is 25px, reducing to 23px below 700px. most controls and metadata use 10–12px labels. courier new and monospace identify machine records, timestamps, and the readme; they are not the general interface voice. long casebook text stays within 68–70ch.
+lucida grande, lucida sans unicode, and arial carry the 12px desktop interface. centered window titles use 12px normal weight. puzzle interiors currently retain their explicit 12px tahoma stack; records, timestamps, and personal notes use courier new. most supporting labels use 10–11px. headings stay compact rather than becoming page headlines.
 
 ## Layout
 
-the desktop has a left icon rail and a fixed taskbar. the principal window is centered with a maximum width of 1030px; utility windows use 840px. chapter navigation sits directly above the active puzzle. desktop title bars can be dragged; mobile panels ignore the drag offset.
+the document, body, and root occupy the viewport without scrolling. a bounded workspace sits below the 25px top menu and above a 78px dock reservation. each window has independent position, size, focus order, and minimized state. its content scrolls while chrome remains available. desktop icons align at the right edge.
 
-below 1000px, window padding tightens. below 700px, the icon rail and desktop caption disappear and the active panel fills the available width. below 560px, staff choices become a vertical list. content may scroll vertically while the taskbar remains reachable. terminal options retain three compact columns.
+the dock is centered, 64px tall, 6px above the bottom, with 49px item boxes and 39px icons. it uses an 8px gap, a 13px radius, and a maximum width of the viewport minus 16px. hover magnification lifts nearby icons by up to 7px and scales them up to 1.18.
+
+at 620px or below, the top menu is 29px tall, the workspace reserves 64px below, and only the active application fills the workspace. title bars are 37px tall; traffic lights are 21px across. the dock is 57px tall, 5px above the bottom, with 42 × 44px item boxes and 32px icons. secondary menu items and dock tooltips are hidden. puzzle touch targets enlarge at 700px or below.
 
 ## Elevation & Depth
 
-controls use opposing light and dark inset lines to imply raised or pressed states. windows share the same bevel grammar, with one ambient shadow under the main desktop window. puzzle evidence uses flat paper surfaces, thin outlines, and sunken image or circuit frames. depth identifies the material and state rather than decorating every item.
+window chrome uses a silver vertical gradient with a thin border and a soft ambient shadow. application buttons use a near-white-to-gray fill, a small radius, and a light inset highlight. the dock and system menu use translucent surfaces; the dock has a 12px backdrop blur. restrained reflections and shadow belong to the approved aqua material language. puzzle diagrams and photographs remain flat artifacts within these applications.
 
 ## Shapes
 
-windows and buttons have square corners. original desktop icons are crisp svg pixel forms. circular exceptions are the message-information button, indicator dots, and diagram nodes. photo and footage assets are original svg simulations of fictional security records.
+windows use 7px outer corners and 6px top title-bar corners. ordinary application controls use 4px corners. the dock uses 13px corners and its icon buttons use 8px corners. traffic lights are circular. mobile application windows have square outer edges to fill the workspace. original application icons and fictional camera frames are svg assets.
 
 ## Components
 
-- **window:** navy title bar with icon, filename, and three working controls; gray menu and status strips; paper content.
-- **buttons:** silver bevel by default; navy for the main shell action. press reverses the bevel. dotted or dashed navy keyboard focus stays visible.
-- **chapter tabs:** three ordered tabs with number or completion tick, selected paper surface, and navy number marker.
-- **records:** a thin bordered expandable disclosure, with actual clue text and a keyboard-operable summary.
-- **inputs:** labeled native range and select controls. photo exposure and alignment update the artifact immediately. circuit switches expose their connected state.
-- **feedback:** optional short confirmation tone, a compact saved notification, and one result panel. hints and errors remain readable beside the puzzle. reduced-motion preference disables movement.
+- **window:** bounded drag, keyboard title-bar movement, double-click maximize, restore, minimize, close, and focus-aware stacking. titles are centered; the conventional right-side control group is hidden.
+- **traffic lights:** adapted ryos controls, arranged at the left; red closes, yellow minimizes, green maximizes or restores. pointer events do not trigger title-bar dragging. action glyphs appear on hover or keyboard focus.
+- **top menu:** active application title, file access, notebook, help, and historical clock. the system menu exposes available applications.
+- **dock:** adapted ryos magnification hook and game-specific application adapter. running indicators mark open applications. labels appear on hover or focus on desktop. reduced-motion preferences suppress transition effects.
+- **files and inputs:** white file rows, blue selections, expandable facts, labeled ranges, and timestamp selects. recovered files and notebook attachments carry narrative discoveries.
+- **feedback:** compact local errors, saved-file views, optional confirmation tone, and translucent notifications. controls remain keyboard accessible and audio is optional.
 
 ## Do's and Don'ts
 
-- do preserve the pinned classic desktop palette and square bevel language.
-- do make the puzzle artifact larger and clearer than its controls.
-- do pair every diagram state with a text label and provide keyboard controls.
-- do keep every visible control functional.
-- don't introduce glass, rounded dashboard cards, or decorative hacker terminals.
-- don't require precision dragging, audio, or external research to solve a chapter.
-- don't claim the two-to-four-minute target is measured without human playtesting.
+- do preserve the approved aqua menu, dock, traffic lights, and silver chrome.
+- do keep scrolling within applications and the desktop within the viewport.
+- do retain original purple icons and the compact application scale.
+- do pair visual state with accessible text or semantic control state.
+- don't restore the discarded teal desktop, navy title bars, or bottom taskbar.
+- don't add an outer game dashboard or large promotional headings.
+- don't require precise dragging, audio, or external research to solve a chapter.
